@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Knowlex Sync</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 350px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: #667eea;
+    }
+    
+    p {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+    
+    .input-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    
+    input[type="text"],
+    input[type="url"] {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 13px;
+      transition: border-color 0.3s;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      margin-bottom: 10px;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #666;
+    }
+    
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+    
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 15px;
+      display: none;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    
+    .status.visible {
+      display: block;
+    }
+    
+    .progress {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      font-size: 12px;
+      display: none;
+    }
+    
+    .progress.visible {
+      display: block;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    
+    .setup-view, .synced-view {
+      display: none;
+    }
+    
+    .setup-view.active, .synced-view.active {
+      display: block;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .stat-card {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Setup View (First Time) -->
+    <div class="setup-view" id="setupView">
+      <h1>🚀 Welcome to Knowlex</h1>
+      <p>Enter your API URL and auth token to start syncing your Twitter bookmarks.</p>
+      
+      <div class="status" id="status"></div>
+      
+      <div class="input-group">
+        <label for="apiUrl">API URL</label>
+        <input type="url" id="apiUrl" placeholder="http://localhost:8080" value="http://localhost:8080">
+      </div>
+      
+      <div class="input-group">
+        <label for="authToken">Auth Token</label>
+        <input type="text" id="authToken" placeholder="Paste your token from Knowlex Settings">
+      </div>
+      
+      <button class="btn-primary" id="saveBtn">Save & Start Sync</button>
+      <button class="btn-secondary" id="testBtn">Test Connection</button>
+    </div>
+    
+    <!-- Synced View (After Setup) -->
+    <div class="synced-view" id="syncedView">
+      <h1>✅ Knowlex Sync</h1>
+      <p>Your extension is configured and ready!</p>
+      
+      <div class="status" id="syncStatus"></div>
+      
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="totalBookmarks">0</div>
+          <div class="stat-label">Total Bookmarks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="lastSync">Never</div>
+          <div class="stat-label">Last Sync</div>
+        </div>
+      </div>
+      
+      <div class="progress" id="progress">
+        <div id="progressText">Syncing... 0/0</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+      
+      <button class="btn-primary" id="syncBtn" style="margin-top: 15px;">Sync Now</button>
+      <button class="btn-secondary" id="resetBtn">Reset Settings</button>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
+

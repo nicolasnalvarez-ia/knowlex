@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Knowlex - X Bookmarks Sync",
+  "version": "1.0.0",
+  "description": "Automatically sync your X (formerly Twitter) bookmarks to Knowlex for better organization and search",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://twitter.com/*",
+    "https://x.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://twitter.com/*/bookmarks",
+        "https://x.com/*/bookmarks"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
+
