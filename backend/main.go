@@ -98,6 +98,13 @@ func main() {
 			userGroup.DELETE("/account", handlers.DeleteAccount)
 		}
 
+		aiGroup := api.Group("/ai")
+		aiGroup.Use(middleware.AuthMiddleware())
+		{
+			aiGroup.POST("/categorize", handlers.AutoCategorizeBookmarks)
+			aiGroup.POST("/categorize/:id", handlers.CategorizeBookmark)
+		}
+
 		api.GET("/health", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		})

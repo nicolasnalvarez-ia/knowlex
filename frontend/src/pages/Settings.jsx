@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Moon, Sun, Trash2, User, Copy, Eye, EyeOff } from 'lucide-react';
+import { Download, Moon, Sun, Trash2, User, Copy, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import useAuthStore from '../lib/authStore';
@@ -163,6 +163,29 @@ const Settings = () => {
               <strong className="font-bold">⚠️ Security:</strong> Keep this token private. If compromised, logout and login again to generate a new one.
             </p>
           </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            AI Categorization
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Automatically categorize your uncategorized bookmarks using AI
+          </p>
+          <button
+            onClick={async () => {
+              try {
+                const response = await api.post('/ai/categorize');
+                toast.success(`Categorized ${response.data.data.categorized} bookmarks!`);
+              } catch (error) {
+                toast.error('Failed to categorize bookmarks');
+              }
+            }}
+            className="w-full flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
+          >
+            <Sparkles className="w-5 h-5" />
+            Auto-Categorize Bookmarks
+          </button>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">

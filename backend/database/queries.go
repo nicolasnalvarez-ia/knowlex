@@ -326,6 +326,61 @@ func RemoveBookmarkFromCategory(ctx context.Context, bookmarkID, categoryID, use
 	return err
 }
 
+func GetUncategorizedBookmarks(ctx context.Context, userID uuid.UUID, limit int) ([]models.Bookmark, error) {
+	query := `
+		SELECT b.id, b.user_id, b.tweet_id, b.tweet_text, b.author_username, 
+		       b.author_display_name, b.tweet_url, b.media_urls, b.bookmarked_at, b.created_at
+		FROM bookmarks b
+		LEFT JOIN bookmark_categories bc ON b.id = bc.bookmark_id
+		WHERE b.user_id = $1 AND bc.id IS NULL
+		ORDER BY b.created_at DESC
+		LIMIT $2
+	`
+	
+	rows, err := DB.Query(ctx, query, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var bookmarks []models.Bookmark
+	for rows.Next() {
+		var b models.Bookmark
+		err := rows.Scan(&b.ID, &b.UserID, &b.TweetID, &b.TweetText, &b.AuthorUsername,
+			&b.AuthorDisplayName, &b.TweetURL, &b.MediaURLs, &b.BookmarkedAt, &b.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		bookmarks = append(bookmarks, b)
+	}
+	return bookmarks, nil
+}
+
+func GetBookmarkByID(ctx context.Context, bookmarkID, userID uuid.UUID) (*models.Bookmark, error) {
+	bookmark := &models.Bookmark{}
+	query := `
+		SELECT id, user_id, tweet_id, tweet_text, author_username, author_display_name, 
+		       tweet_url, media_urls, bookmarked_at, created_at
+		FROM bookmarks
+		WHERE id = $1 AND user_id = $2
+	`
+	err := DB.QueryRow(ctx, query, bookmarkID, userID).Scan(
+		&bookmark.ID, &bookmark.UserID, &bookmark.TweetID, &bookmark.TweetText,
+		&bookmark.AuthorUsername, &bookmark.AuthorDisplayName, &bookmark.TweetURL,
+		&bookmark.MediaURLs, &bookmark.BookmarkedAt, &bookmark.CreatedAt,
+	)
+	if err == pgx.ErrNoRows {
+		return nil, fmt.Errorf("bookmark not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	
+	categories, _ := GetCategoriesByBookmarkID(ctx, bookmark.ID)
+	bookmark.Categories = categories
+	return bookmark, nil
+}
+
 func DeleteUserAndAllData(ctx context.Context, userID uuid.UUID) error {
 	query := `DELETE FROM users WHERE id = $1`
 	_, err := DB.Exec(ctx, query, userID)
