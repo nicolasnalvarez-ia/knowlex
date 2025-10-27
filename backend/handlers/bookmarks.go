@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 	"twitter-bookmarks-api/database"
 	"twitter-bookmarks-api/models"
+	"twitter-bookmarks-api/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -59,6 +61,7 @@ func ImportBookmarks(c *gin.Context) {
 
 	importedCount := 0
 	duplicateCount := 0
+	newBookmarks := make([]models.Bookmark, 0, len(importData.Bookmarks))
 
 	for _, item := range importData.Bookmarks {
 		bookmarkedAt, err := time.Parse(time.RFC3339, item.BookmarkedAt)
@@ -82,13 +85,28 @@ func ImportBookmarks(c *gin.Context) {
 			duplicateCount++
 		} else {
 			importedCount++
+			newBookmarks = append(newBookmarks, *bookmark)
+		}
+	}
+
+	autoCategorized := 0
+	if importedCount > 0 {
+		user, err := database.GetUserByID(c.Request.Context(), userID)
+		if err == nil && user != nil && user.AutoCategorize {
+			categorized, _, err := services.CategorizeBookmarksForUser(c.Request.Context(), userID, newBookmarks)
+			if err != nil {
+				fmt.Printf("auto categorize failed: %v\n", err)
+			} else {
+				autoCategorized = categorized
+			}
 		}
 	}
 
 	c.JSON(http.StatusOK, models.ImportResponse{
-		Message:        "Import completed",
-		ImportedCount:  importedCount,
-		DuplicateCount: duplicateCount,
+		Message:         "Import completed",
+		ImportedCount:   importedCount,
+		DuplicateCount:  duplicateCount,
+		AutoCategorized: autoCategorized,
 	})
 }
 

@@ -97,6 +97,51 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
+// Detect tabs opened from Knowlex dashboard to trigger sync automatically
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (!tab || !tab.url) return;
+
+  const url = new URL(tab.url);
+  const isBookmarksPage =
+    (url.hostname === 'twitter.com' || url.hostname === 'x.com') &&
+    url.pathname.startsWith('/i/bookmarks');
+
+  if (isBookmarksPage && url.searchParams.get('knowlex_sync') === '1') {
+    if (changeInfo.status === 'complete') {
+      console.log('Knowlex: Detected bookmarks tab opened from dashboard, triggering extraction');
+      const sendStartMessage = () => {
+        chrome.tabs.sendMessage(tabId, { type: 'START_EXTRACTION' }, () => {
+          if (chrome.runtime.lastError) {
+            console.warn('Knowlex: START_EXTRACTION failed, injecting content script...', chrome.runtime.lastError.message);
+            chrome.scripting.executeScript(
+              {
+                target: { tabId },
+                files: ['content.js'],
+              },
+              () => {
+                if (chrome.runtime.lastError) {
+                  console.error('Knowlex: Unable to inject content script', chrome.runtime.lastError.message);
+                  return;
+                }
+                setTimeout(() => {
+                  chrome.tabs.sendMessage(tabId, { type: 'START_EXTRACTION' }, (response) => {
+                    if (chrome.runtime.lastError) {
+                      console.error('Knowlex: Failed to trigger extraction after reinject', chrome.runtime.lastError.message);
+                    }
+                  });
+                }, 500);
+              }
+            );
+          }
+        });
+      };
+
+      // Delay slightly to ensure page scripts settle
+      setTimeout(sendStartMessage, 500);
+    }
+  }
+});
+
 // Helper to test API connection
 async function testConnection(apiUrl, authToken) {
   try {

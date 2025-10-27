@@ -44,8 +44,8 @@ Automatically sync your Twitter/X bookmarks to Knowlex for better organization a
 5. Wait for automatic sync to complete
 
 ### Manual Sync
-- Click the extension icon
-- Click "Sync Now" button
+- Click the extension icon and then "Sync Now"
+- **OR** use the "Refresh Bookmarks" button in the Knowlex dashboard (opens Twitter bookmarks automatically)
 - Extension will open Twitter bookmarks and start syncing
 
 ## How It Works

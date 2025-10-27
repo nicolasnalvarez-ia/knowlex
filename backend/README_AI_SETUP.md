@@ -36,9 +36,10 @@ go run main.go
 
 ### Via Frontend (Settings Page)
 1. Navigate to Settings
-2. Click "Auto-Categorize Bookmarks" button
-3. Wait for AI processing
-4. See results notification
+2. Enable "Auto-categorize new imports" toggle to categorize on import
+3. (Optional) Click "Auto-Categorize Bookmarks" button to process existing uncategorized bookmarks
+4. Wait for AI processing
+5. See results notification
 
 ### Via API
 

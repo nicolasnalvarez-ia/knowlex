@@ -18,6 +18,11 @@ const useAuthStore = create((set) => ({
     set({ token: null, user: null, isAuthenticated: false });
   },
 
+  updateUser: (user) => {
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ user });
+  },
+
   fetchUser: async () => {
     try {
       const response = await api.get('/auth/me');

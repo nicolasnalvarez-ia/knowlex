@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Moon, Sun, Trash2, User, Copy, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Download, Moon, Sun, Trash2, User, Copy, Eye, EyeOff, Sparkles, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import useAuthStore from '../lib/authStore';
@@ -10,7 +10,8 @@ const Settings = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [categories, setCategories] = useState([]);
   const [showToken, setShowToken] = useState(false);
-  const { user, logout, token } = useAuthStore();
+  const [autoCategorize, setAutoCategorize] = useState(useAuthStore.getState().user?.auto_categorize ?? false);
+  const { user, logout, token, updateUser } = useAuthStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +19,10 @@ const Settings = () => {
     setDarkMode(isDark);
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    setAutoCategorize(user?.auto_categorize ?? false);
+  }, [user?.auto_categorize]);
 
   const fetchCategories = async () => {
     try {
@@ -96,9 +101,35 @@ const Settings = () => {
     toast.success('Token copied to clipboard!');
   };
 
+  const toggleAutoCategorize = async () => {
+    try {
+      const response = await api.patch('/user/preferences', {
+        auto_categorize: !autoCategorize,
+      });
+      updateUser(response.data);
+      setAutoCategorize(response.data.auto_categorize);
+      toast.success(
+        response.data.auto_categorize
+          ? 'Automatic categorization enabled'
+          : 'Automatic categorization disabled'
+      );
+    } catch (error) {
+      toast.error('Failed to update auto-categorization setting');
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to Dashboard</span>
+          </button>
+        </div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
           Settings
         </h2>
@@ -172,6 +203,24 @@ const Settings = () => {
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Automatically categorize your uncategorized bookmarks using AI
           </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">Auto-categorize new imports</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Categorize bookmarks right after they are imported</p>
+            </div>
+            <button
+              onClick={toggleAutoCategorize}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                autoCategorize ? 'bg-purple-600' : 'bg-gray-400 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                  autoCategorize ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
           <button
             onClick={async () => {
               try {

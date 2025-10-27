@@ -12,23 +12,23 @@ import (
 func CreateUser(ctx context.Context, twitterID, username, displayName, profileImage string) (*models.User, error) {
 	user := &models.User{}
 	query := `
-		INSERT INTO users (twitter_id, username, display_name, profile_image)
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (twitter_id) 
-		DO UPDATE SET username = $2, display_name = $3, profile_image = $4
-		RETURNING id, twitter_id, username, display_name, profile_image, created_at
+        INSERT INTO users (twitter_id, username, display_name, profile_image)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (twitter_id) 
+        DO UPDATE SET username = $2, display_name = $3, profile_image = $4
+        RETURNING id, twitter_id, username, display_name, profile_image, auto_categorize, created_at
 	`
 	err := DB.QueryRow(ctx, query, twitterID, username, displayName, profileImage).Scan(
-		&user.ID, &user.TwitterID, &user.Username, &user.DisplayName, &user.ProfileImage, &user.CreatedAt,
+		&user.ID, &user.TwitterID, &user.Username, &user.DisplayName, &user.ProfileImage, &user.AutoCategorize, &user.CreatedAt,
 	)
 	return user, err
 }
 
 func GetUserByTwitterID(ctx context.Context, twitterID string) (*models.User, error) {
 	user := &models.User{}
-	query := `SELECT id, twitter_id, username, display_name, profile_image, created_at FROM users WHERE twitter_id = $1`
+	query := `SELECT id, twitter_id, username, display_name, profile_image, auto_categorize, created_at FROM users WHERE twitter_id = $1`
 	err := DB.QueryRow(ctx, query, twitterID).Scan(
-		&user.ID, &user.TwitterID, &user.Username, &user.DisplayName, &user.ProfileImage, &user.CreatedAt,
+		&user.ID, &user.TwitterID, &user.Username, &user.DisplayName, &user.ProfileImage, &user.AutoCategorize, &user.CreatedAt,
 	)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -38,9 +38,9 @@ func GetUserByTwitterID(ctx context.Context, twitterID string) (*models.User, er
 
 func GetUserByID(ctx context.Context, userID uuid.UUID) (*models.User, error) {
 	user := &models.User{}
-	query := `SELECT id, twitter_id, username, display_name, profile_image, created_at FROM users WHERE id = $1`
+	query := `SELECT id, twitter_id, username, display_name, profile_image, auto_categorize, created_at FROM users WHERE id = $1`
 	err := DB.QueryRow(ctx, query, userID).Scan(
-		&user.ID, &user.TwitterID, &user.Username, &user.DisplayName, &user.ProfileImage, &user.CreatedAt,
+		&user.ID, &user.TwitterID, &user.Username, &user.DisplayName, &user.ProfileImage, &user.AutoCategorize, &user.CreatedAt,
 	)
 	if err == pgx.ErrNoRows {
 		return nil, nil
@@ -336,7 +336,7 @@ func GetUncategorizedBookmarks(ctx context.Context, userID uuid.UUID, limit int)
 		ORDER BY b.created_at DESC
 		LIMIT $2
 	`
-	
+
 	rows, err := DB.Query(ctx, query, userID, limit)
 	if err != nil {
 		return nil, err
@@ -375,7 +375,7 @@ func GetBookmarkByID(ctx context.Context, bookmarkID, userID uuid.UUID) (*models
 	if err != nil {
 		return nil, err
 	}
-	
+
 	categories, _ := GetCategoriesByBookmarkID(ctx, bookmark.ID)
 	bookmark.Categories = categories
 	return bookmark, nil
@@ -384,6 +384,16 @@ func GetBookmarkByID(ctx context.Context, bookmarkID, userID uuid.UUID) (*models
 func DeleteUserAndAllData(ctx context.Context, userID uuid.UUID) error {
 	query := `DELETE FROM users WHERE id = $1`
 	_, err := DB.Exec(ctx, query, userID)
+	return err
+}
+
+func UpdateUserPreferences(ctx context.Context, userID uuid.UUID, autoCategorize *bool) error {
+	if autoCategorize == nil {
+		return nil
+	}
+
+	query := `UPDATE users SET auto_categorize = $1 WHERE id = $2`
+	_, err := DB.Exec(ctx, query, *autoCategorize, userID)
 	return err
 }
 

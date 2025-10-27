@@ -67,9 +67,10 @@ Your X bookmarks manager now includes intelligent AI categorization powered by C
 
 1. Import your X bookmarks via the extension
 2. Go to **Settings** page
-3. Click **"Auto-Categorize Bookmarks"** 
-4. Wait a few seconds for AI magic ✨
-5. See your bookmarks organized into categories!
+3. Toggle **"Auto-categorize new imports"** to enable automatic categorization
+4. (Optional) Click **"Auto-Categorize Bookmarks"** to process existing uncategorized items
+5. Wait a few seconds for AI magic ✨
+6. See your bookmarks organized into categories!
 
 ### Filter & Search
 
