@@ -19,7 +19,11 @@
     {
       "matches": [
         "https://twitter.com/*/bookmarks",
-        "https://x.com/*/bookmarks"
+        "https://twitter.com/i/bookmarks",
+        "https://twitter.com/i/bookmarks/*",
+        "https://x.com/*/bookmarks",
+        "https://x.com/i/bookmarks",
+        "https://x.com/i/bookmarks/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"

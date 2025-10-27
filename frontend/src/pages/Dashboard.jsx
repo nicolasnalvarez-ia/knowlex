@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, RefreshCw } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import BookmarkGrid from '../components/bookmarks/BookmarkGrid';
 import api from '../lib/api';
@@ -12,6 +12,16 @@ const Dashboard = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+
+  const handleRefreshSync = () => {
+    const syncUrl = 'https://x.com/i/bookmarks?knowlex_sync=1';
+    const newWindow = window.open(syncUrl, '_blank');
+    if (newWindow) {
+      toast.success('Opened Twitter bookmarks to start sync. Keep the tab open until it finishes.');
+    } else {
+      toast.error('Please allow popups to run the sync.');
+    }
+  };
 
   useEffect(() => {
     fetchBookmarks();
@@ -117,6 +127,15 @@ const Dashboard = () => {
                   Showing {bookmarks.length} bookmarks
                 </p>
               )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleRefreshSync}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh Bookmarks
+              </button>
             </div>
           </div>
 

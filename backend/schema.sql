@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT NOT NULL,
     display_name TEXT,
     profile_image TEXT,
+    auto_categorize BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

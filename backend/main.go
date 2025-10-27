@@ -36,7 +36,7 @@ func main() {
 	if frontendURL == "" {
 		frontendURL = "http://localhost:5173"
 	}
-	
+
 	// Allow frontend URL and Chrome extension origins
 	corsConfig.AllowOriginFunc = func(origin string) bool {
 		// Allow frontend URL
@@ -96,6 +96,14 @@ func main() {
 		userGroup.Use(middleware.AuthMiddleware())
 		{
 			userGroup.DELETE("/account", handlers.DeleteAccount)
+			userGroup.PATCH("/preferences", handlers.UpdateUserPreferences)
+		}
+
+		aiGroup := api.Group("/ai")
+		aiGroup.Use(middleware.AuthMiddleware())
+		{
+			aiGroup.POST("/categorize", handlers.AutoCategorizeBookmarks)
+			aiGroup.POST("/categorize/:id", handlers.CategorizeBookmark)
 		}
 
 		api.GET("/health", func(c *gin.Context) {

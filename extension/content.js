@@ -3,17 +3,27 @@ console.log('Knowlex: Content script loaded on X bookmarks page');
 
 let isExtracting = false;
 let extractedTweetIds = new Set();
+let collectedBookmarks = {};
+
+const urlParams = new URLSearchParams(window.location.search);
+const shouldTriggerSync = urlParams.get('knowlex_sync') === '1';
 
 // Check if we should auto-start extraction
 chrome.storage.local.get(['apiUrl', 'authToken', 'autoStarted'], (result) => {
-  if (result.apiUrl && result.authToken && !result.autoStarted) {
-    // Mark as auto-started so we don't do this again
-    chrome.storage.local.set({ autoStarted: true });
-    
-    // Wait for page to fully load, then start extraction
-    setTimeout(() => {
-      startExtraction();
-    }, 3000);
+  if (result.apiUrl && result.authToken) {
+    if (shouldTriggerSync) {
+      console.log('Knowlex: Sync trigger detected from knowlex_sync parameter');
+      chrome.storage.local.set({ autoStarted: false });
+      setTimeout(() => {
+        startExtraction();
+      }, 2000);
+    } else if (!result.autoStarted) {
+      // mark as auto-started and run initial sync once
+      chrome.storage.local.set({ autoStarted: true });
+      setTimeout(() => {
+        startExtraction();
+      }, 3000);
+    }
   }
 });
 
@@ -34,6 +44,7 @@ async function startExtraction() {
   
   isExtracting = true;
   extractedTweetIds.clear();
+  collectedBookmarks = {};
   
   console.log('Knowlex: Starting bookmark extraction...');
   
@@ -44,8 +55,10 @@ async function startExtraction() {
     // Auto-scroll to load all bookmarks
     await autoScroll();
     
-    // Extract bookmarks
-    const bookmarks = extractBookmarks();
+    // Collect bookmarks one final time in case new ones appeared after scrolling stopped
+    collectVisibleBookmarks();
+    
+    const bookmarks = Object.values(collectedBookmarks);
     
     console.log(`Knowlex: Extracted ${bookmarks.length} bookmarks`);
     
@@ -86,44 +99,42 @@ async function startExtraction() {
 }
 
 async function autoScroll() {
-  return new Promise((resolve) => {
-    let scrollCount = 0;
-    let lastHeight = document.body.scrollHeight;
-    let noChangeCount = 0;
-    
-    const scrollInterval = setInterval(() => {
-      window.scrollTo(0, document.body.scrollHeight);
-      scrollCount++;
-      
-      showOverlay(`Loading bookmarks... (scroll ${scrollCount})`, Math.min(scrollCount * 2, 40));
-      
-      setTimeout(() => {
-        const newHeight = document.body.scrollHeight;
-        
-        if (newHeight === lastHeight) {
-          noChangeCount++;
-          if (noChangeCount >= 3) {
-            // No new content loaded after 3 attempts
-            clearInterval(scrollInterval);
-            resolve();
-          }
-        } else {
-          noChangeCount = 0;
-          lastHeight = newHeight;
-        }
-        
-        // Safety limit: stop after 100 scrolls
-        if (scrollCount >= 100) {
-          clearInterval(scrollInterval);
-          resolve();
-        }
-      }, 1000);
-    }, 1500);
-  });
+  const scrollingElement = document.scrollingElement || document.documentElement;
+  let scrollCount = 0;
+  let stableAttempts = 0;
+  let previousTweetCount = 0;
+
+  while (scrollCount < 150 && stableAttempts < 8) {
+    scrollCount++;
+    const currentTweetCount = document.querySelectorAll('article[data-testid="tweet"]').length;
+
+    scrollingElement.scrollTo({ top: scrollingElement.scrollHeight, behavior: 'smooth' });
+    showOverlay(`Loading bookmarks... (scroll ${scrollCount})`, Math.min(scrollCount * 2, 45));
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+
+    collectVisibleBookmarks();
+    const newTweetCount = document.querySelectorAll('article[data-testid="tweet"]').length;
+
+    if (newTweetCount <= currentTweetCount) {
+      stableAttempts++;
+    } else {
+      stableAttempts = 0;
+      previousTweetCount = newTweetCount;
+    }
+
+    // If we haven't increased the tweet count in the last few attempts, break out
+    if (stableAttempts >= 8) {
+      console.log('Knowlex: No more new tweets loaded after multiple attempts');
+      break;
+    }
+  }
+
+  // Give page a moment to finalize layout before extraction
+  await new Promise((resolve) => setTimeout(resolve, 1500));
 }
 
-function extractBookmarks() {
-  const bookmarks = [];
+function collectVisibleBookmarks() {
   const articles = document.querySelectorAll('article[data-testid="tweet"]');
   
   console.log(`Knowlex: Found ${articles.length} tweet articles`);
@@ -159,8 +170,8 @@ function extractBookmarks() {
       const timeElement = article.querySelector('time');
       const bookmarkedAt = timeElement ? timeElement.getAttribute('datetime') : new Date().toISOString();
       
-      if (tweetId && tweetText) {
-        bookmarks.push({
+      if (tweetId) {
+        collectedBookmarks[tweetId] = {
           tweet_id: tweetId,
           tweet_text: tweetText,
           author_username: authorUsername,
@@ -168,14 +179,12 @@ function extractBookmarks() {
           tweet_url: tweetUrl,
           media_urls: mediaUrls,
           bookmarked_at: bookmarkedAt
-        });
+        };
       }
     } catch (error) {
       console.error('Knowlex: Error parsing tweet:', error);
     }
   });
-  
-  return bookmarks;
 }
 
 // Overlay functions

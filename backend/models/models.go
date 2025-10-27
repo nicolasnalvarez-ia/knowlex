@@ -2,16 +2,18 @@ package models
 
 import (
 	"time"
+
 	"github.com/google/uuid"
 )
 
 type User struct {
-	ID           uuid.UUID `json:"id"`
-	TwitterID    string    `json:"twitter_id"`
-	Username     string    `json:"username"`
-	DisplayName  string    `json:"display_name"`
-	ProfileImage string    `json:"profile_image"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID             uuid.UUID `json:"id"`
+	TwitterID      string    `json:"twitter_id"`
+	Username       string    `json:"username"`
+	DisplayName    string    `json:"display_name"`
+	ProfileImage   string    `json:"profile_image"`
+	AutoCategorize bool      `json:"auto_categorize"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 type Bookmark struct {
@@ -67,9 +69,10 @@ type SuccessResponse struct {
 }
 
 type ImportResponse struct {
-	Message        string `json:"message"`
-	ImportedCount  int    `json:"imported_count"`
-	DuplicateCount int    `json:"duplicate_count"`
+	Message         string `json:"message"`
+	ImportedCount   int    `json:"imported_count"`
+	DuplicateCount  int    `json:"duplicate_count"`
+	AutoCategorized int    `json:"auto_categorized,omitempty"`
 }
 
 type PaginationParams struct {
@@ -100,4 +103,8 @@ type UpdateCategoryRequest struct {
 
 type AssignCategoryRequest struct {
 	CategoryID string `json:"category_id" binding:"required"`
+}
+
+type UpdatePreferencesRequest struct {
+	AutoCategorize *bool `json:"auto_categorize"`
 }
